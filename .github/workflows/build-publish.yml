@@ -6,6 +6,11 @@ on:
       project:
         required: true
         type: string
+    secrets:
+      user:
+        required: true
+      pat:
+        required: true
 
 env:
   GITHUB_USER: RxyRobot
@@ -23,7 +28,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Authenticate to GitHub
-        run: dotnet nuget add source --username $GITHUB_USER --password ${{ secrets.RXY_PAT }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/rxhonesty/index.json"
+        run: dotnet nuget add source --username ${{ secrets.user }} --password ${{ secrets.pat }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/rxhonesty/index.json"
 
       - name: Build & Publish
         run: |
