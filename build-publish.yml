@@ -1,0 +1,37 @@
+name: Build & Publish
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+
+jobs:
+  build-publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: ${{ inputs.project }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Build & Publish
+        run: |
+          dotnet restore
+          dotnet build --no-restore --configuration Release
+          dotnet publish --no-build --configuration Release --output ./publish
+      
+      - name: Compress
+        run: |
+          Compress-Archive ./publish/* ${{ github.run_id }}.zip
+      
+      - name: Upload Project
+        uses: actions/upload-artifact@v3
+        with:
+          name: published-app
+          path: ./${{ inputs.project }}/${{ github.run_id }}.zip
+          if-no-files-found: error
