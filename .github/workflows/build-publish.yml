@@ -12,9 +12,6 @@ on:
       pat:
         required: true
 
-env:
-  GITHUB_USER: RxyRobot
-
 jobs:
   build-publish:
     runs-on: ubuntu-latest
