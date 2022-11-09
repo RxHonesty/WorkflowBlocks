@@ -61,7 +61,7 @@ jobs:
       - name: Create Plan
         id: plan
         run: |
-          terraform plan -out=tfplan -var="published_app_location=..\${{ github.run_id }}.zip" | Out-Null
+          terraform plan -out=tfplan -var="published_app_location=.\${{ github.run_id }}.zip" | Out-Null
           terraform show -no-color tfplan
 
       - name: Apply Plan
