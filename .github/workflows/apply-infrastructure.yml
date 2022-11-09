@@ -21,6 +21,7 @@ on:
 
 jobs:
   apply:
+    name: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     env:
