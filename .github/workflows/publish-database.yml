@@ -1,0 +1,56 @@
+name: Deploy Database
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      server:
+        required: true
+        type: string
+      database:
+        required: true
+        type: string
+    secrets:
+      ARM_CLIENT_ID:
+        required: true
+      ARM_CLIENT_SECRET:
+        required: true
+      ARM_SUBSCRIPTION_ID:
+        required: true
+      ARM_TENANT_ID:
+        required: true
+
+jobs:
+  db:
+    name: Deploying Database
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults:
+      working-directory: Database
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Build DACPAC
+        run: |
+          dotnet build /p:NetCoreBuild=true --configuration Release
+
+      - name: Acquire Access Token
+        id: sql-login
+        uses: Azure/azure-resource-login-action@v1.0.0
+        with:
+            creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
+            resource-url: "https://database.windows.net"
+
+
+      - name: Publish Database
+        id: deploy-report
+        uses: Azure/run-sqlpackage-action@v1.0.0
+        with:
+          action: 'Publish'
+          sourcepath: ./bin/Release/
+          database-server: ${{ inputs.server }}
+          database-name: ${{ inputs.database }}
+          authtoken: ${{ steps.sql-login.outputs.token }}
