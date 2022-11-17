@@ -1,0 +1,36 @@
+name: Build Database
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+
+jobs:
+  build:
+    name: Building...
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: ${{ inputs.project }}
+    
+    steps:
+      - name: Checking out repository...
+        id: checkout
+        uses: actions/checkout@v3
+      
+      - name: Building DACPAC...
+        id: build
+        run: |
+          dotnet build /p:NetCoreBuild=true --configuration Release --output .\
+          Rename-Item ((Get-Item *.dacpac)[0].Name) ${{ github.run_id }}.dacpac
+
+      - name: Uploading artifact...
+        id: upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: database
+          path: ./${{ inputs.project }}/${{ github.run_id }}.dacpac
+          if-no-files-found: error

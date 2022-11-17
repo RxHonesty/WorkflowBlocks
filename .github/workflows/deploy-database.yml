@@ -1,0 +1,51 @@
+name: Deploy Database
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      server:
+        required: true
+        type: string
+      database:
+        required: true
+        type: string
+    secrets:
+      ARM_CLIENT_ID:
+        required: true
+      ARM_CLIENT_SECRET:
+        required: true
+      ARM_SUBSCRIPTION_ID:
+        required: true
+      ARM_TENANT_ID:
+        required: true
+
+jobs:
+  publish:
+    name: Publishing...
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Downloading artifacts...
+        id: download
+        uses: actions/download-artifact@v3
+        with:
+          name: database
+          if-no-files-found: error
+
+      - name: Logging into Azure...
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
+
+      - name: Deploying Database...
+        id: publish
+        uses: azure/sql-action@v2
+        with:
+          connection-string: Server=${{ inputs.server }}.database.windows.net;Initial Catalog=${{ inputs.database }};Authentication=Active Directory Service Principal;User Id=${{ secrets.ARM_CLIENT_ID }};Password=${{ secrets.ARM_CLIENT_SECRET }}
+          path:  ${{ github.run_id }}.dacpac
+          action: 'publish'
+          arguments: '/p:DropObjectsNotInSource=false'

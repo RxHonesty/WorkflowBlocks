@@ -3,6 +3,9 @@ name: Apply Infrastructure
 on:
   workflow_call:
     inputs:
+      project:
+        required: true
+        type: string
       environment:
         required: true
         type: string
@@ -18,11 +21,22 @@ on:
         required: true
       ARM_TENANT_ID:
         required: true
+    outputs:
+      sql:
+        value: ${{ jobs.apply.outputs.sql }}
+      sqldb:
+        value: ${{ jobs.apply.outputs.sqldb }}
+      app:
+        value: ${{ jobs.apply.outputs.app }}
 
 jobs:
   apply:
-    name: ${{ inputs.environment }}
+    name: Applying...
     runs-on: ubuntu-latest
+    outputs:
+      sql: ${{ steps.output.outputs.sql }}
+      sqldb: ${{ steps.output.outputs.sqldb }}
+      app: ${{ steps.output.outputs.app }}
     environment: ${{ inputs.environment }}
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
@@ -32,39 +46,55 @@ jobs:
     defaults:
       run:
         shell: pwsh
-        working-directory: ./Terraform
+        working-directory: ./${{ inputs.project }}
 
     steps:
-      - name: Install Terraform
+      - name: Installing Terraform...
+        id: install-terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
 
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+      - name: Checking out repository...
+        id: checkout
+        uses: actions/checkout@v3
 
-      - name: Download Project
+      - name: Downloading artifact...
+        id: download
         uses: actions/download-artifact@v3
         with:
-          name: published-app
-          path: ./Terraform/${{ github.run_id }}.zip
+          name: app
+          path: ./${{ inputs.project }}/${{ github.run_id }}.zip
           if-no-files-found: error
 
-      - name: Initialize
+      - name: Initializing...
         id: init
         run: |
           terraform init -no-color
       
-      - name: Set Workspace
+      - name: Setting workspace...
         id: workspace
         run: |
           terraform workspace select ${{ inputs.workspace }}
       
-      - name: Create Plan
+      - name: Creating plan...
         id: plan
         run: |
-          terraform plan -out=tfplan -var="published_app_location=.\${{ github.run_id }}.zip" | Out-Null
+          terraform plan -out=tfplan -var="published_app_location=..\${{ github.run_id }}.zip" | Out-Null
           terraform show -no-color tfplan
 
-      - name: Apply Plan
+      - name: Applying plan...
         id: apply
         run: |
           terraform apply -no-color -auto-approve tfplan
+
+      - name: Setting outputs...
+        id: output
+        run: |
+          sql=$(terraform output -json sql | sed 's/"//g')
+          echo "sql=$sql" >> $GITHUB_OUTPUT
+          sqldb=$(terraform output -json sqldb | sed 's/"//g')
+          echo "sqldb=$sqldb" >> $GITHUB_OUTPUT
+          app=$(terraform output -json app | sed 's/"//g')
+          echo "app=$app" >> $GITHUB_OUTPUT
+        shell: bash
