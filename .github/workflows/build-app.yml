@@ -6,6 +6,11 @@ on:
       project:
         required: true
         type: string
+    secrets:
+      user:
+        required: true
+      pat:
+        required: true
 
 jobs:
   build-publish:
@@ -20,6 +25,9 @@ jobs:
       - name: Checking out repository...
         id: checkout
         uses: actions/checkout@v3
+
+      - name: Authenticating to Github...
+        run: dotnet nuget add source --username ${{ secrets.user }} --password ${{ secrets.pat }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/rxhonesty/index.json"
 
       - name: Building app...
         id: build
