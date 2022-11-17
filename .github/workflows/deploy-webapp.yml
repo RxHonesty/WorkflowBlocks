@@ -1,0 +1,45 @@
+name: Deploy Web App
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      name:
+        required: true
+        type: string
+    secrets:
+      ARM_CLIENT_ID:
+        required: true
+      ARM_CLIENT_SECRET:
+        required: true
+      ARM_SUBSCRIPTION_ID:
+        required: true
+      ARM_TENANT_ID:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploying...
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Downloading artifacts...
+        id: download
+        uses: actions/download-artifact@v3
+        with:
+          name: app
+          if-no-files-found: error
+
+      - name: Logging into Azure...
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
+
+      - name: Deploying App...
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ inputs.name }}
+          package: ./${{ github.run_id }}.zip
