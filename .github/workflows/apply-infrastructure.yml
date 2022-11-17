@@ -59,14 +59,6 @@ jobs:
         id: checkout
         uses: actions/checkout@v3
 
-      - name: Downloading artifact...
-        id: download
-        uses: actions/download-artifact@v3
-        with:
-          name: app
-          path: ./${{ inputs.project }}/${{ github.run_id }}.zip
-          if-no-files-found: error
-
       - name: Initializing...
         id: init
         run: |
@@ -80,7 +72,7 @@ jobs:
       - name: Creating plan...
         id: plan
         run: |
-          terraform plan -out=tfplan -var="published_app_location=..\${{ github.run_id }}.zip" | Out-Null
+          terraform plan -out=tfplan | Out-Null
           terraform show -no-color tfplan
 
       - name: Applying plan...
