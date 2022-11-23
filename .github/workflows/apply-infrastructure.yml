@@ -28,6 +28,8 @@ on:
         value: ${{ jobs.apply.outputs.sqldb }}
       app:
         value: ${{ jobs.apply.outputs.app }}
+      stapp_token:
+        value: ${{ jobs.apply.outputs.stapp_token }}
 
 jobs:
   apply:
@@ -37,6 +39,7 @@ jobs:
       sql: ${{ steps.output.outputs.sql }}
       sqldb: ${{ steps.output.outputs.sqldb }}
       app: ${{ steps.output.outputs.app }}
+      stapp_token: ${{ steps.output.outputs.stapp_token }}
     environment: ${{ inputs.environment }}
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
@@ -83,10 +86,8 @@ jobs:
       - name: Setting outputs...
         id: output
         run: |
-          sql=$(terraform output -json sql | sed 's/"//g')
-          echo "sql=$sql" >> $GITHUB_OUTPUT
-          sqldb=$(terraform output -json sqldb | sed 's/"//g')
-          echo "sqldb=$sqldb" >> $GITHUB_OUTPUT
-          app=$(terraform output -json app | sed 's/"//g')
-          echo "app=$app" >> $GITHUB_OUTPUT
-        shell: bash
+          $TfOutput = (terraform output -json) | ConvertFrom-Json
+          echo "sql=$($TfOutput.sql.value)" >> $Env:GITHUB_OUTPUT
+          echo "sqldb=$($TfOutput.sqldb.value)" >> $Env:GITHUB_OUTPUT
+          echo "app=$($TfOutput.app.value)" >> $Env:GITHUB_OUTPUT
+          echo "stapp_token=$($TfOutput.stapp_token.value)" >> $Env:GITHUB_OUTPUT
